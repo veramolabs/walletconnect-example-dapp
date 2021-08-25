@@ -452,6 +452,51 @@ class App extends React.Component<any, any> {
     }
   };
 
+  public testCredsStore = async () => {
+    const { connector, address } = this.state;
+
+    if (!connector) {
+      return;
+    }
+
+
+    try {
+      // open modal
+      this.toggleModal();
+
+      // toggle pending request indicator
+      this.setState({ pendingRequest: true });
+
+      // store credential
+      const result = await connector.sendCustomRequest({
+        id: 1,
+        jsonrpc: '2.0',
+        method: 'did_creds_store',
+        params: [{issuer: {id: 'did:example:123'}}]
+      });
+
+      const valid = true
+
+      // format displayed result
+      const formattedResult = {
+        method: "did_creds_store",
+        address,
+        valid,
+        result,
+      };
+
+      // display result
+      this.setState({
+        connector,
+        pendingRequest: false,
+        result: formattedResult || null,
+      });
+    } catch (error) {
+      console.error(error);
+      this.setState({ connector, pendingRequest: false, result: null });
+    }
+  };
+
   public render = () => {
     const {
       assets,
@@ -502,6 +547,10 @@ class App extends React.Component<any, any> {
 
                     <STestButton left onClick={this.testSignTypedData}>
                       {"eth_signTypedData"}
+                    </STestButton>
+
+                    <STestButton left onClick={this.testCredsStore}>
+                      {"did_creds_store"}
                     </STestButton>
                   </STestButtonContainer>
                 </Column>
