@@ -127,6 +127,16 @@ const STestButton = styled(Button as any)`
   margin: 12px;
 `;
 
+const STestDIDButton = styled(Button as any)`
+  border-radius: 8px;
+  background-color: rgb(37, 194, 160);
+  font-size: ${fonts.size.medium};
+  height: 44px;
+  width: 100%;
+  max-width: 175px;
+  margin: 12px;
+`;
+
 interface IAppState {
   connector: WalletConnect | null;
   fetching: boolean;
@@ -472,7 +482,7 @@ class App extends React.Component<any, any> {
         id: 1,
         jsonrpc: '2.0',
         method: 'did_creds_store',
-        params: [{issuer: {id: 'did:example:123'}}]
+        params: [{ "credentialSubject": { "it": "rocks", "id": "did:web:sun.veramo.io" }, "issuer": { "id": "did:ethr:0x42AE496E4928c2d68998ac66a248DF66cd0002c6" }, "type": ["VerifiableCredential"], "@context": ["https://www.w3.org/2018/credentials/v1"], "issuanceDate": "2021-08-26T10:44:54.000Z", "proof": { "type": "JwtProof2020", "jwt": "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIl0sImNyZWRlbnRpYWxTdWJqZWN0Ijp7Iml0Ijoicm9ja3MifX0sInN1YiI6ImRpZDp3ZWI6c3VuLnZlcmFtby5pbyIsIm5iZiI6MTYyOTk3NDY5NCwiaXNzIjoiZGlkOmV0aHI6MHg0MkFFNDk2RTQ5MjhjMmQ2ODk5OGFjNjZhMjQ4REY2NmNkMDAwMmM2In0.6FeYZ_1xyuazwrOf9UwUYtWc6hN-y1v4x4cjqyKiPtir-Nrhinby4hjOdO6dGjrddLvsgHJ2l8gMRemBf3W9-Q" } }]
       });
 
       const valid = true
@@ -483,6 +493,59 @@ class App extends React.Component<any, any> {
         address,
         valid,
         result,
+      };
+
+      // display result
+      this.setState({
+        connector,
+        pendingRequest: false,
+        result: formattedResult || null,
+      });
+    } catch (error) {
+      console.error(error);
+      this.setState({ connector, pendingRequest: false, result: null });
+    }
+  };
+
+  public testCredsIssue = async () => {
+    const { connector, address } = this.state;
+
+    if (!connector) {
+      return;
+    }
+
+
+    try {
+      // open modal
+      this.toggleModal();
+
+      // toggle pending request indicator
+      this.setState({ pendingRequest: true });
+
+      // issue credential
+      const result = await connector.sendCustomRequest({
+        id: 1,
+        jsonrpc: '2.0',
+        method: 'did_creds_issue',
+        params: [
+          {
+            issuer: { id: 'did:ethr:' + address },
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential'],
+            issuanceDate: new Date().toISOString(),
+            credentialSubject: {
+              id: 'did:web:sun.veramo.io',
+              it: 'rocks',
+            },
+          },
+          'did:example:0xaaaa#my-secp256k1-key'
+        ]
+      });
+
+      // format displayed result
+      const formattedResult = {
+        method: "did_creds_issue",
+        result: JSON.stringify(result),
       };
 
       // display result
@@ -549,9 +612,14 @@ class App extends React.Component<any, any> {
                       {"eth_signTypedData"}
                     </STestButton>
 
-                    <STestButton left onClick={this.testCredsStore}>
+                    <STestDIDButton left onClick={this.testCredsStore}>
                       {"did_creds_store"}
-                    </STestButton>
+                    </STestDIDButton>
+
+                    <STestDIDButton left onClick={this.testCredsIssue}>
+                      {"did_creds_issue"}
+                    </STestDIDButton>
+
                   </STestButtonContainer>
                 </Column>
                 <h3>Balances</h3>
