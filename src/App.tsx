@@ -482,16 +482,31 @@ class App extends React.Component<any, any> {
         id: 1,
         jsonrpc: '2.0',
         method: 'did_creds_store',
-        params: [{ "credentialSubject": { "it": "rocks", "id": "did:web:sun.veramo.io" }, "issuer": { "id": "did:ethr:0x42AE496E4928c2d68998ac66a248DF66cd0002c6" }, "type": ["VerifiableCredential"], "@context": ["https://www.w3.org/2018/credentials/v1"], "issuanceDate": "2021-08-26T10:44:54.000Z", "proof": { "type": "JwtProof2020", "jwt": "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIl0sImNyZWRlbnRpYWxTdWJqZWN0Ijp7Iml0Ijoicm9ja3MifX0sInN1YiI6ImRpZDp3ZWI6c3VuLnZlcmFtby5pbyIsIm5iZiI6MTYyOTk3NDY5NCwiaXNzIjoiZGlkOmV0aHI6MHg0MkFFNDk2RTQ5MjhjMmQ2ODk5OGFjNjZhMjQ4REY2NmNkMDAwMmM2In0.6FeYZ_1xyuazwrOf9UwUYtWc6hN-y1v4x4cjqyKiPtir-Nrhinby4hjOdO6dGjrddLvsgHJ2l8gMRemBf3W9-Q" } }]
+        params: [
+          {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1"
+            ],
+            "age": 19,
+            "etc": "etc",
+            "credentialSchema": [
+              {
+                "id": "https://www.w3.org/TR/vc-data-model/#types"
+              }
+            ],
+            issuanceDate: new Date().toISOString(),
+            "credentialSubject": { id: 'did:ethr:' + address },
+            "id": "2dc74354-e965-4883-be5e-bfec48bf60c7",
+            "issuer": "did:example:1234",
+            "type": "VerifiableCredential"
+          }
+        ]
       });
 
-      const valid = true
 
       // format displayed result
       const formattedResult = {
         method: "did_creds_store",
-        address,
-        valid,
         result,
       };
 
@@ -545,6 +560,80 @@ class App extends React.Component<any, any> {
       // format displayed result
       const formattedResult = {
         method: "did_creds_issue",
+        result: JSON.stringify(result),
+      };
+
+      // display result
+      this.setState({
+        connector,
+        pendingRequest: false,
+        result: formattedResult || null,
+      });
+    } catch (error) {
+      console.error(error);
+      this.setState({ connector, pendingRequest: false, result: null });
+    }
+  };
+
+  public testCredsPresent = async () => {
+    const { connector } = this.state;
+
+    if (!connector) {
+      return;
+    }
+
+
+    try {
+      // open modal
+      this.toggleModal();
+
+      // toggle pending request indicator
+      this.setState({ pendingRequest: true });
+
+      // issue credential
+      const result = await connector.sendCustomRequest({
+        id: 1,
+        jsonrpc: '2.0',
+        method: 'did_creds_present',
+        params: [
+          {
+            "presentation_definition": {
+              "id": "31e2f0f1-6b70-411d-b239-56aed5321884",
+              "purpose": "To sell you a drink we need to know that you are an adult.",
+              "input_descriptors": [
+                {
+                  "id": "867bfe7a-5b91-46b2-9ba4-70028b8d9cc8",
+                  "purpose": "Your age should be greater or equal to 18.",
+                  "schema": [
+                    {
+                      "uri": "https://www.w3.org/TR/vc-data-model/#types"
+                    }
+                  ],
+                  "constraints": {
+                    "limit_disclosure": "required",
+                    "fields": [
+                      {
+                        "path": [
+                          "$.age"
+                        ],
+                        "filter": {
+                          "type": "integer",
+                          "minimum": 18
+                        },
+                        "predicate": "required"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      });
+
+      // format displayed result
+      const formattedResult = {
+        method: "did_creds_present",
         result: JSON.stringify(result),
       };
 
@@ -618,6 +707,10 @@ class App extends React.Component<any, any> {
 
                     <STestDIDButton left onClick={this.testCredsIssue}>
                       {"did_creds_issue"}
+                    </STestDIDButton>
+
+                    <STestDIDButton left onClick={this.testCredsPresent}>
+                      {"did_creds_present"}
                     </STestDIDButton>
 
                   </STestButtonContainer>
